@@ -1,0 +1,235 @@
+#!csharp
+
+using System;
+using System.Linq;
+
+public class Kata
+{
+    public static long QueueTime(int[] customers, int n)
+    {
+        var queues = new int[n];
+
+        foreach(var customer in customers)
+        {
+            int shortestQueue = Enumerable.Range(0, queues.Length).Aggregate((a, b) => (queues[a] < queues[b]) ? a : b);
+            queues[shortestQueue] += customer;
+        }
+
+        int longestqueue = Enumerable.Range(0, queues.Length).Aggregate((a, b) => (queues[a] > queues[b]) ? a : b);
+
+        return queues[longestqueue];        
+    }
+}
+
+public void ExampleTest1()
+{
+    long expected = 0;
+    
+    long actual = Kata.QueueTime(new int[] { }, 1);
+
+    Console.WriteLine($"Test1. Expected: {expected}, Actual: {actual}");
+}
+
+public void ExampleTest2()
+{
+    long expected = 10;
+    
+    long actual = Kata.QueueTime(new int[] { 1, 2, 3, 4 }, 1);
+
+    Console.WriteLine($"Test2. Expected: {expected}, Actual: {actual}");
+}
+
+public void ExampleTest3()
+{
+    long expected = 9;
+    
+    long actual = Kata.QueueTime(new int[] { 2, 2, 3, 3, 4, 4 }, 2);
+
+    Console.WriteLine($"Test3. Expected: {expected}, Actual: {actual}");
+}
+
+public void ExampleTest4()
+{
+    long expected = 5;
+    
+    long actual = Kata.QueueTime(new int[] { 1, 2, 3, 4, 5 }, 100);
+
+    Console.WriteLine($"Test4. Expected: {expected}, Actual: {actual}");
+}
+
+ExampleTest1();
+ExampleTest2();
+ExampleTest3();
+ExampleTest4();
+
+#!csharp
+
+using System;
+using System.Linq;
+
+public class Kata
+{
+    public static long QueueTime(int[] customers, int n)
+    {
+        var queueManager = new QueueManager(n);
+        foreach(var customer in customers)
+        {
+            queueManager.QueueCustomer(customer);
+        }
+        return queueManager.GetTotalTimeRequired();
+    }
+}
+
+public class QueueManager
+{
+    private readonly int[] _queues;
+
+    public QueueManager(int numberOfQueues)
+    {
+        _queues = new int[numberOfQueues];
+    }
+
+    public void QueueCustomer(int customer)
+    {
+        _queues[GetShortestQueue()] += customer;
+    }
+
+    public int GetTotalTimeRequired()
+    {
+        int longestqueue = Enumerable.Range(0, _queues.Length).Aggregate((a, b) => (_queues[a] > _queues[b]) ? a : b);
+
+        return _queues[longestqueue];
+    }
+
+    private int GetShortestQueue()
+    {
+        return Enumerable.Range(0, _queues.Length).Aggregate((a, b) => (_queues[a] < _queues[b]) ? a : b);
+    }
+}
+
+public void ExampleTest1()
+{
+    long expected = 0;
+    
+    long actual = Kata.QueueTime(new int[] { }, 1);
+
+    Console.WriteLine($"Test1. Expected: {expected}, Actual: {actual}");
+}
+
+public void ExampleTest2()
+{
+    long expected = 10;
+    
+    long actual = Kata.QueueTime(new int[] { 1, 2, 3, 4 }, 1);
+
+    Console.WriteLine($"Test2. Expected: {expected}, Actual: {actual}");
+}
+
+public void ExampleTest3()
+{
+    long expected = 9;
+    
+    long actual = Kata.QueueTime(new int[] { 2, 2, 3, 3, 4, 4 }, 2);
+
+    Console.WriteLine($"Test3. Expected: {expected}, Actual: {actual}");
+}
+
+public void ExampleTest4()
+{
+    long expected = 5;
+    
+    long actual = Kata.QueueTime(new int[] { 1, 2, 3, 4, 5 }, 100);
+
+    Console.WriteLine($"Test4. Expected: {expected}, Actual: {actual}");
+}
+
+ExampleTest1();
+ExampleTest2();
+ExampleTest3();
+ExampleTest4();
+
+#!csharp
+
+using System;
+using System.Linq;
+
+public class Kata
+{
+    public static long QueueTime(int[] customers, int n)
+    {
+        var queueManager = new QueueManager(n);
+        foreach(var customer in customers)
+        {
+            queueManager.QueueCustomer(customer);
+        }
+        return queueManager.GetTotalTimeRequired();
+    }
+}
+
+class QueueManager
+{
+    private readonly int[] _queues;
+
+    public QueueManager(int numberOfQueues)
+    {
+        _queues = new int[numberOfQueues];
+    }
+
+    public void QueueCustomer(int customer)
+    {
+        _queues[GetShortestQueue()] += customer;
+    }
+
+    public int GetTotalTimeRequired()
+    {
+        int longestqueue = Enumerable.Range(0, _queues.Length).Aggregate((a, b) => (_queues[a] > _queues[b]) ? a : b);
+
+        return _queues[longestqueue];
+    }
+
+    private int GetShortestQueue()
+    {
+        return Enumerable.Range(0, _queues.Length).Aggregate((a, b) => (_queues[a] < _queues[b]) ? a : b);
+    }
+}
+
+public void ExampleTest1()
+{
+    long expected = 0;
+    
+    long actual = Kata.QueueTime(new int[] { }, 1);
+
+    Console.WriteLine($"Test1. Expected: {expected}, Actual: {actual}");
+}
+
+public void ExampleTest2()
+{
+    long expected = 10;
+    
+    long actual = Kata.QueueTime(new int[] { 1, 2, 3, 4 }, 1);
+
+    Console.WriteLine($"Test2. Expected: {expected}, Actual: {actual}");
+}
+
+public void ExampleTest3()
+{
+    long expected = 9;
+    
+    long actual = Kata.QueueTime(new int[] { 2, 2, 3, 3, 4, 4 }, 2);
+
+    Console.WriteLine($"Test3. Expected: {expected}, Actual: {actual}");
+}
+
+public void ExampleTest4()
+{
+    long expected = 5;
+    
+    long actual = Kata.QueueTime(new int[] { 1, 2, 3, 4, 5 }, 100);
+
+    Console.WriteLine($"Test4. Expected: {expected}, Actual: {actual}");
+}
+
+ExampleTest1();
+ExampleTest2();
+ExampleTest3();
+ExampleTest4();

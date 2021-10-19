@@ -1,0 +1,203 @@
+#!csharp
+
+#r "nuget: NUnit, 3.13.2"
+
+#!csharp
+
+class SnakesLadders
+{
+    private readonly int[] _board = { 0, 1, 38, 3, 4, 5, 6, 14, 31, 9, 10, 11, 12, 13, 14, 26, 6, 17, 18, 19, 20, 42, 22, 23, 24, 25, 26, 27, 84, 29, 30, 31, 32, 33, 34, 35, 44, 37, 38, 39, 40, 41, 42, 43, 44, 45, 25, 47, 48, 11, 50, 67, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 19, 63, 60, 65, 66, 67, 68, 69, 70, 91, 72, 73, 53, 75, 76, 77, 98, 79, 80, 81, 82, 83, 84, 85, 86, 94, 88, 68, 90, 91, 88, 93, 94, 75, 96, 97, 98, 80, 100 };
+    private int _currentPlayer = 1;
+    private int _player1Pos = 0;
+    private int _player2Pos = 0;
+    private bool winner = false;
+
+    private int checkNextPlayer(int die1, int die2, int currentPlayer, int otherPlayer)
+    {
+        return die1 == die2 ? currentPlayer : otherPlayer;
+    }
+
+    private string formatResponse(int player, int square)
+    {
+        if (square == 100)
+        {
+            winner = true;
+            return $"Player {player} Wins!";
+        }
+        return $"Player {player} is on square {square}";
+    }
+
+    private int getNewPosition(int previousPosition, int combinedThrow)
+    {
+        int newPos = previousPosition + combinedThrow;
+        if (newPos > 100)
+        {
+            // bounce
+            newPos = 100 - (newPos - 100);
+        }
+        return _board[newPos];
+    }
+
+    public string play (int die1, int die2)
+    {
+        string result = "Game over!";
+        if (winner)
+        {
+            return result;
+        }
+
+        if (_currentPlayer == 1)
+        {
+            _player1Pos = getNewPosition(_player1Pos, die1+die2); 
+            result = formatResponse(_currentPlayer, _player1Pos);
+            _currentPlayer = checkNextPlayer(die1, die2, _currentPlayer, 2);            
+        }
+        else
+        {
+            _player2Pos = getNewPosition(_player2Pos, die1+die2); 
+            result = formatResponse(_currentPlayer, _player2Pos);
+            _currentPlayer = checkNextPlayer(die1, die2, _currentPlayer, 1);
+        }        
+        
+        return result;
+    }
+}
+
+#!csharp
+
+class SnakesLadders
+{
+    private readonly int[] _board = { 0, 1, 38, 3, 4, 5, 6, 14, 31, 9, 10, 11, 12, 13, 14, 26, 6, 17, 18, 19, 20, 42, 22, 23, 24, 25, 26, 27, 84, 29, 30, 31, 32, 33, 34, 35, 44, 37, 38, 39, 40, 41, 42, 43, 44, 45, 25, 47, 48, 11, 50, 67, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 19, 63, 60, 65, 66, 67, 68, 69, 70, 91, 72, 73, 53, 75, 76, 77, 98, 79, 80, 81, 82, 83, 84, 85, 86, 94, 88, 68, 90, 91, 88, 93, 94, 75, 96, 97, 98, 80, 100 };
+    private Player _currentPlayer;
+    
+    public SnakesLadders()
+    {
+        _currentPlayer = SetupPlayersAndReturnFirst();
+    }
+
+    public string play (int die1, int die2)
+    {
+        string result = _currentPlayer.Play(die1, die2);
+        _currentPlayer = _currentPlayer.GetNextPlayer(die1, die2);
+        return result;
+    } 
+    
+    private Player SetupPlayersAndReturnFirst()
+    {
+        var player1 = new Player(1, _board);
+        var player2 = new Player(2, _board, player1);
+        player1.SetNextPlayer(player2);
+        return player1;
+    }
+}
+
+class Player
+{
+    private readonly int _playerNumber;
+    private readonly int[] _board;
+    private Player _nextPlayer;
+    
+    public Player(int playerNumber, int[] board)
+    {
+        _playerNumber = playerNumber;
+        _board = board;
+        Position = 0;
+        HasWon = false;
+    }
+    
+    public Player(int playerNumber, int[] board, Player nextPlayer) : this(playerNumber, board)
+    {
+        _nextPlayer = nextPlayer;
+    }
+
+    public void SetNextPlayer(Player nextPlayer)
+    {
+        _nextPlayer = nextPlayer;
+    }
+
+    public int Position { get; private set; }    
+
+    public bool HasWon { get; private set; }
+
+    public string Play(int die1, int die2)
+    {
+        if (HasWon)
+        {
+            return "Game over!";
+        }
+
+        Position = getNewPosition(die1, die2);
+        HasWon = Position == 100;
+
+        return formatResponse();
+    }
+
+    public Player GetNextPlayer(int die1, int die2)
+    {
+        return HasWon || die1 == die2 ? this : _nextPlayer;
+    }
+
+    private int getNewPosition(int die1, int die2)
+    {
+        int newPos = Position + die1 + die2;
+        if (newPos > 100)
+        {
+            newPos = 100 - (newPos - 100);
+        }
+        return _board[newPos];
+    }
+
+    private string formatResponse()
+    {
+        return HasWon ?  $"Player {_playerNumber} Wins!": $"Player {_playerNumber} is on square {Position}";
+    }
+}
+
+#!csharp
+
+using NUnit.Framework;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+[TestFixture]
+class KataTestClass
+{
+    private SnakesLadders test = new SnakesLadders();
+
+    [TestCase]
+    public void BasicTest1()
+    {
+        string result = test.play(1, 1);
+        Assert.AreEqual("Player 1 is on square 38",result, "Should return: 'Player 1 is on square 38'");
+    }
+
+    [TestCase]
+    public void BasicTest2()
+    {
+        string result = test.play(1, 5);
+        Assert.AreEqual("Player 1 is on square 44",result, "Should return: 'Player 1 is on square 44'");
+    }
+
+    [TestCase]
+    public void BasicTest3()
+    {
+        string result = test.play(6, 2);
+        Assert.AreEqual("Player 2 is on square 31",result, "Should return: 'Player 2 is on square 31'");
+    }
+
+    [TestCase]
+    public void BasicTest4()
+    {
+        string result = test.play(1, 1);
+        Assert.AreEqual("Player 1 is on square 25", result, "Should return: 'Player 1 is on square 25'");
+    }
+}
+
+var tc = new KataTestClass();
+tc.BasicTest1();
+tc.BasicTest2();
+tc.BasicTest3();
+tc.BasicTest4();

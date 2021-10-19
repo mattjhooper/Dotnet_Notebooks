@@ -1,0 +1,62 @@
+#!csharp
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+public class Kata
+{
+    private IEnumerable<string> words;
+
+    public Kata(IEnumerable<string> words)
+    {
+        this.words = words;
+    }
+
+    public string FindMostSimilar(string term)
+    {
+        var mostSimilar = term;
+
+        int lowestChanges = Int16.MaxValue;
+        foreach (var word in words)
+        {
+            var wordlowestChanges = GetWordChangeCount(term, word);
+            if (wordlowestChanges < lowestChanges)
+            {
+                lowestChanges = wordlowestChanges;
+                mostSimilar = word;
+            }
+        }
+        
+        return mostSimilar;
+    }
+
+    private int GetWordChangeCount(string term, string word)
+    {
+        int changeCount = 0;
+        for (int i = 0; i < term.Length && i < word.Length; i++)
+        {
+            if (term[i] != word[i])
+            {
+                changeCount++;
+            }
+        }
+
+        changeCount += Math.Abs(word.Length - term.Length);
+
+        Console.WriteLine($"{term} => {word}. Changes: {changeCount}");
+        
+        return changeCount;
+    }
+}
+
+Kata kata = new Kata(new List<string> { "cherry", "pineapple", "melon", "strawberry", "raspberry" });
+Console.WriteLine($"Expected: strawberry, Actual {kata.FindMostSimilar("strawbery")}");
+Console.WriteLine($"Expected: cherry, Actual {kata.FindMostSimilar("berry")}");
+
+kata = new Kata(new List<string> { "stars", "mars", "wars", "codec", "codewars" });
+Console.WriteLine($"Expected: codewars, Actual {kata.FindMostSimilar("coddwars")}");
+
+kata = new Kata(new List<string> { "javascript", "java", "ruby", "php", "python", "coffeescript" });
+Console.WriteLine($"Expected: java, Actual {kata.FindMostSimilar("heaven")}");
+Console.WriteLine($"Expected: javascript, Actual {kata.FindMostSimilar("javascript")}");

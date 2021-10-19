@@ -1,0 +1,47 @@
+#!csharp
+
+public class BouncingBall {
+  
+    public static int bouncingBall(double h, double bounce, double window) {
+      return hasBadInputs(h,bounce,window) ? -1 : 1 + getSightingsAfterBounce(h,bounce,window);
+    }
+  
+    public static bool hasBadInputs(double h, double bounce, double window) => h <= 0 || bounce < 0 || bounce >= 1 || h <= window;
+  
+    public static int getSightingsAfterBounce(double h, double bounce, double window)
+    {
+        h *= bounce;
+        return h <= window ? 0 : 2 + getSightingsAfterBounce(h,bounce,window);        
+    }
+  }
+
+Console.WriteLine($"Expected: 3, Actual {BouncingBall.bouncingBall(3.0, 0.66, 1.5)}");
+Console.WriteLine($"Expected: 15, Actual {BouncingBall.bouncingBall(30.0, 0.66, 1.5)}");
+
+#!csharp
+
+public class BouncingBall {
+  
+    public static int bouncingBall(double h, double bounce, double window) {
+      return cannotReachWindow(h,bounce,window) ? -1 : 2 + bouncingBall(h * bounce,bounce,window);
+    }
+  
+    public static bool cannotReachWindow(double h, double bounce, double window) => h <= 0 || bounce < 0 || bounce >= 1 || h <= window;
+  }
+
+Console.WriteLine($"Expected: 3, Actual {BouncingBall.bouncingBall(3.0, 0.66, 1.5)}");
+Console.WriteLine($"Expected: 15, Actual {BouncingBall.bouncingBall(30.0, 0.66, 1.5)}");
+
+#!csharp
+
+public class BouncingBall {
+  
+    public static int bouncingBall(double h, double bounce, double window) {
+      return canBeSeen(h,bounce,window) ? 2 + bouncingBall(h * bounce,bounce,window) : -1;
+    }
+  
+    public static bool canBeSeen(double h, double bounce, double window) => 0 < h && 0 <= bounce && bounce < 1 && window < h;
+  }
+
+Console.WriteLine($"Expected: 3, Actual {BouncingBall.bouncingBall(3.0, 0.66, 1.5)}");
+Console.WriteLine($"Expected: 15, Actual {BouncingBall.bouncingBall(30.0, 0.66, 1.5)}");
