@@ -1,0 +1,128 @@
+#!csharp
+
+#r "nuget: NUnit, 3.13.2"
+
+#!markdown
+
+You will be given a 2D array of the maze and an array of directions. Your task is to follow the directions given. If you reach the end point before all your moves have gone, you should return Finish. If you hit any walls or go outside the maze border, you should return Dead. If you find yourself still in the maze after using all the moves, you should return Lost.
+
+maze = [[1,1,1,1,1,1,1],
+        [1,0,0,0,0,0,3],
+        [1,0,1,0,1,0,1],
+        [0,0,1,0,0,0,1],
+        [1,0,1,0,1,0,1],
+        [1,0,0,0,0,0,1],
+        [1,2,1,0,1,0,1]]
+
+      0 = Safe place to walk
+      1 = Wall
+      2 = Start Point
+      3 = Finish Point
+
+direction = ["N","N","N","N","N","E","E","E","E","E"] == "Finish"
+
+1. The Maze array will always be square i.e. N x N but its size and content will alter from test to test.
+
+2. The start and finish positions will change for the final tests.
+
+3. The directions array will always be in upper case and will be in the format of N = North, E = East, W = West and S = South.
+
+4. If you reach the end point before all your moves have gone, you should return Finish.
+
+5. If you hit any walls or go outside the maze border, you should return Dead.
+
+6. If you find yourself still in the maze after using all the moves, you should return Lost.
+
+#!csharp
+
+class Kata
+{
+    public string mazeRunner(int[,] maze, string[] directions)
+    {
+        // Code here
+        return "Finish";
+    }
+}
+
+#!csharp
+
+using NUnit.Framework;
+using System;
+
+
+[TestFixture]
+class KataTestClass
+{
+    private int[,] maze = new int[,] { { 1, 1, 1, 1, 1, 1, 1 },
+                                    { 1, 0, 0, 0, 0, 0, 3 },
+                                    { 1, 0, 1, 0, 1, 0, 1 },
+                                    { 0, 0, 1, 0, 0, 0, 1 },
+                                    { 1, 0, 1, 0, 1, 0, 1 },
+                                    { 1, 0, 0, 0, 0, 0, 1 },
+                                    { 1, 2, 1, 0, 1, 0, 1 } };
+    
+    [TestCase]
+    public void FinishTest1()
+    {
+        string[] directions = new string[] { "N", "N", "N", "N", "N", "E", "E", "E", "E", "E" };
+        Kata test = new Kata();
+        string result = test.mazeRunner(maze, directions);
+        Assert.AreEqual("Finish", result, "Should return: 'Finish'");
+    }
+    
+    [TestCase]
+    public void FinishTest2()
+    {
+        string[] directions = new string[] { "N","N","N","N","N","E","E","S","S","E","E","N","N","E" };
+        Kata test = new Kata();
+        string result = test.mazeRunner(maze, directions);
+        Assert.AreEqual("Finish", result, "Should return: 'Finish'");
+    }
+    
+    [TestCase]
+    public void FinishTest3()
+    {
+        string[] directions = new string[] { "N","N","N","N","N","E","E","E","E","E","W","W" };
+        Kata test = new Kata();
+        string result = test.mazeRunner(maze, directions);
+        Assert.AreEqual("Finish", result, "Should return: 'Finish'");
+    }
+    
+    [TestCase]
+    public void DeadTest1()
+    {
+        string[] directions = new string[] { "N","N","N","W","W" };
+        Kata test = new Kata();
+        string result = test.mazeRunner(maze, directions);
+        Assert.AreEqual("Dead", result, "Should return: 'Dead'");
+    }
+    
+    [TestCase]
+    public void DeadTest2()
+    {
+        string[] directions = new string[] { "N","N","N","N","N","E","E","S","S","S","S","S","S" };
+        Kata test = new Kata();
+        string result = test.mazeRunner(maze, directions);
+        Assert.AreEqual("Dead", result, "Should return: 'Dead'");
+    }
+    
+    [TestCase]
+    public void LostTest1()
+    {
+        string[] directions = new string[] { "N","E","E","E","E" };
+        Kata test = new Kata();
+        string result = test.mazeRunner(maze, directions);
+        Assert.AreEqual("Lost", result, "Should return: 'Lost'");
+    }
+    
+}
+
+#!csharp
+
+var tc = new KataTestClass();
+tc.FinishTest1();
+tc.FinishTest2();
+tc.FinishTest3();
+tc.DeadTest1();
+tc.DeadTest2();
+tc.LostTest1();
