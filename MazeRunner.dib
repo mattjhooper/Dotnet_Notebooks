@@ -39,9 +39,91 @@ class Kata
 {
     public string mazeRunner(int[,] maze, string[] directions)
     {
+        string result = "Lost";
+        
         // Code here
-        return "Finish";
+        var theMaze = new Maze(maze);
+
+        foreach(var direction in directions)
+        {
+            result = theMaze.MovePlayer(direction);
+            if (result == "Finish")
+            {
+                return result;
+            }
+        }
+
+        return result;
     }
+}
+
+record Point(int X, int Y)
+{
+
+}
+
+class Maze
+{
+    private readonly int[,] _maze;
+    private readonly int _width;
+    private Point _playerLocation;
+    private Point _finishLocation;
+
+    public Maze(int[,] maze)
+    {
+        _maze = maze;
+        _width = (int)Math.Sqrt(_maze.Length);
+
+        Console.WriteLine($"Width: {_width}");
+
+        for (int y = 0; y < _width; y++)
+        {
+            for (int x = 0; x < _width; x++)
+            {
+                if(_maze[y,x] == 2)
+                {
+                    _playerLocation = new(x,y);
+                }
+
+                if(_maze[y,x] == 3)
+                {
+                    _finishLocation = new(x,y);
+                }
+            }
+        }
+
+        Console.WriteLine($"_playerLocation: {_playerLocation.ToString()}. _finishLocation: {_finishLocation.ToString()}");
+    }
+
+    public string MovePlayer(string direction)
+    {
+        Point newPosition = direction switch 
+        {
+           "N" => _playerLocation with { Y = _playerLocation.Y - 1 },
+           "S" => _playerLocation with { Y = _playerLocation.Y + 1 },
+           "E" => _playerLocation with { X = _playerLocation.X + 1 },
+           "W" => _playerLocation with { X = _playerLocation.X - 1 },
+            _ => throw new ArgumentOutOfRangeException(nameof(direction), $"Not expected direction value: {direction}"),
+        };
+
+        //Console.WriteLine($"direction: {direction}. newPosition: {newPosition.ToString()}.");
+
+        if (!IsWalkable(newPosition))
+        {
+            return "Dead";
+        }
+
+        _playerLocation = newPosition;
+        //Console.WriteLine($"_playerLocation: {_playerLocation.ToString()}. _finishLocation: {_finishLocation.ToString()}");
+        return _playerLocation == _finishLocation ? "Finish" : "Lost";
+    }
+
+    private bool IsWalkable(Point p)
+    {
+        return p.X >= 0 &&  p.X < _width && 0 <= p.Y && p.Y < _width && _maze[p.Y, p.X] != 1;
+    }
+
+
 }
 
 #!csharp
