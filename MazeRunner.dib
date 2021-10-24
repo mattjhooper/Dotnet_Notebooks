@@ -122,9 +122,289 @@ class Maze
     {
         return p.X >= 0 &&  p.X < _width && 0 <= p.Y && p.Y < _width && _maze[p.Y, p.X] != 1;
     }
-
-
 }
+
+#!csharp
+
+class Kata
+{
+    public string mazeRunner(int[,] maze, string[] directions)
+    {
+        string result = "Lost";
+        
+        // Code here
+        var theMaze = new Maze(maze);
+
+        foreach(var direction in directions)
+        {
+            result = theMaze.MovePlayer(direction);
+            if (result != "Lost")
+            {
+                return result;
+            }
+        }
+
+        return result;
+    }
+
+    
+}
+
+struct Point
+{
+    public int X { get; private set; }
+    public int Y { get; private set; }
+
+    public Point(int X, int Y)
+    {
+        this.X = X;
+        this.Y = Y;
+    }
+
+    public bool Equals(Point p) => p.X == this.X && p.Y == this.Y;    
+}
+
+class Maze
+{
+    private readonly int[,] _maze;
+    private readonly int _width;
+    private Point _playerLocation;
+    private Point _finishLocation;
+
+    public Maze(int[,] maze)
+    {
+        _maze = maze;
+        _width = (int)Math.Sqrt(_maze.Length);
+
+        Console.WriteLine($"Width: {_width}");
+
+        for (int y = 0; y < _width; y++)
+        {
+            for (int x = 0; x < _width; x++)
+            {
+                if(_maze[y,x] == 2)
+                {
+                    _playerLocation = new Point (x,y);
+                }
+
+                if(_maze[y,x] == 3)
+                {
+                    _finishLocation = new Point (x,y);
+                }
+            }
+        }
+
+        Console.WriteLine($"_playerLocation: {_playerLocation.ToString()}. _finishLocation: {_finishLocation.ToString()}");
+    }
+
+    public string MovePlayer(string direction)
+    {
+        Point newPosition = GetNewPosition(_playerLocation, direction);
+
+        if (!IsWalkable(newPosition))
+        {
+            return "Dead";
+        }
+
+        _playerLocation = newPosition;
+        return _playerLocation.Equals(_finishLocation) ? "Finish" : "Lost";
+    }
+
+    private Point GetNewPosition(Point start, string direction)
+    {
+        switch (direction)
+        {
+            case "N": 
+                return new Point(start.X, start.Y-1 );
+            case "S": 
+                return new Point(start.X, start.Y+1 );
+            case "E": 
+                return new Point(start.X+1, start.Y );
+            case "W": 
+                return new Point(start.X-1, start.Y );    
+            default: 
+                throw new ArgumentOutOfRangeException(nameof(direction), $"Not expected direction value: {direction}");
+
+        }
+    }
+
+    private bool IsWalkable(Point p)
+    {
+        return p.X >= 0 &&  p.X < _width && 0 <= p.Y && p.Y < _width && _maze[p.Y, p.X] != 1;
+    }
+}
+
+#!csharp
+
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+
+class Kata
+  {
+      public string mazeRunner(int[,] maze, string[] directions)
+      {
+          return ProcessDirections(new Maze(maze), directions).ToString();
+      }
+
+      Status ProcessDirections(Maze maze, string[] directions)
+      {
+          Status returnStatus = new Lost();
+          int i = 0;
+
+          while(returnStatus.CanContinue && i < directions.Length)
+          {
+              returnStatus = maze.MovePlayer(directions[i++]);
+          }
+
+          return returnStatus;
+      }
+  }
+
+  struct Point
+  {
+      public int X { get; private set; }
+      public int Y { get; private set; }
+
+      public Point(int X, int Y)
+      {
+          this.X = X;
+          this.Y = Y;
+      }
+
+      public bool Equals(Point p) => p.X == this.X && p.Y == this.Y;    
+  }
+
+  class Maze
+  {
+      private readonly int[,] _maze;
+      private readonly int _width;
+      private Point _playerLocation;
+      private Point _finishLocation;
+      private readonly IImmutableDictionary<string, Direction> _directions;
+      private readonly Key[] _keys;
+
+      public Maze(int[,] maze)
+      {
+          _maze = maze;
+          _width = (int)Math.Sqrt(_maze.Length);
+          _directions = new Dictionary<string, Direction> { { "N", new North()}, {"S", new South()}, { "E", new East()}, {"W", new West()} }.ToImmutableDictionary();
+          _keys = new Key[] {new Walkable(), new Wall(), new StartPoint(), new FinishPoint() };
+          SetStartAndFinishLocations();
+      }
+
+      public Status MovePlayer(string direction)
+      {
+          _playerLocation  = _directions[direction].Move(_playerLocation);
+          return IsInsideMaze(_playerLocation) ? _keys[_maze[_playerLocation.Y, _playerLocation.X]].GetStatus() : new Dead();
+      }    
+
+      private void SetStartAndFinishLocations()
+      {
+          for (int y = 0; y < _width; y++)
+          {
+              for (int x = 0; x < _width; x++)
+              {
+                  var position = _keys[_maze[y,x]];
+                  position.TrySetPlayerLocation(new Point(x,y), ref _playerLocation);
+                  position.TrySetFinishLocation(new Point(x,y), ref _finishLocation);                
+              }
+          }
+      }
+
+      private bool IsInsideMaze(Point p) => p.X >= 0 &&  p.X < _width && 0 <= p.Y && p.Y < _width;
+  }
+
+  interface Status
+  {
+      bool CanContinue { get; }        
+  }
+
+  class Finish : Status
+  {
+      public bool CanContinue => false;
+      override public string ToString() => "Finish";
+  }
+
+  class Lost : Status
+  {
+      public bool CanContinue => true;
+      override public string ToString() => "Lost";
+  }
+
+  class Dead : Status
+  {
+      public bool CanContinue => false;
+      override public string ToString() => "Dead";
+  }
+
+  interface Direction
+  {
+      Point Move(Point start);
+  }
+
+  class North : Direction
+  {
+      public Point Move(Point start) => new Point(start.X, start.Y-1 );
+  }
+
+  class South : Direction
+  {
+      public Point Move(Point start) => new Point(start.X, start.Y+1 );
+  }
+
+  class East : Direction
+  {
+      public Point Move(Point start) => new Point(start.X+1, start.Y );
+  }
+
+  class West : Direction
+  {
+      public Point Move(Point start) => new Point(start.X-1, start.Y );
+  }
+
+  interface Key
+  {
+      bool TrySetPlayerLocation(Point p, ref Point location);
+      bool TrySetFinishLocation(Point p, ref Point location);
+      Status GetStatus();
+  }
+
+  class Walkable : Key
+  {
+      public bool TrySetPlayerLocation(Point p, ref Point location) => false;
+      public bool TrySetFinishLocation(Point p, ref Point location) => false;
+      public Status GetStatus() => new Lost();
+  }
+
+  class Wall : Key
+  {
+      public bool TrySetPlayerLocation(Point p, ref Point location) => false;
+      public bool TrySetFinishLocation(Point p, ref Point location) => false;
+      public Status GetStatus() => new Dead();
+  }
+
+  class StartPoint : Key
+  {
+      public bool TrySetPlayerLocation(Point p, ref Point location)
+      {
+          location = p;
+          return true;
+      }
+      public bool TrySetFinishLocation(Point p, ref Point location) => false;
+      public Status GetStatus() => new Lost();
+  }
+
+  class FinishPoint : Key
+  {
+      public bool TrySetPlayerLocation(Point p, ref Point location) => false;
+      public bool TrySetFinishLocation(Point p, ref Point location)
+      {
+          location = p;
+          return true;
+      }
+      public Status GetStatus() => new Finish();
+  }
 
 #!csharp
 
@@ -197,6 +477,169 @@ class KataTestClass
         Assert.AreEqual("Lost", result, "Should return: 'Lost'");
     }
     
+}
+
+#!csharp
+
+using System;
+using System.Collections.Immutable;
+
+class Kata
+{
+    public string mazeRunner(int[,] maze, string[] directionStrings)
+    {
+        var player = new Player(new Maze(maze));
+        player.ProcessDirections(directionStrings);
+        return player.GetStatus();
+    }
+}
+
+class Player
+{
+    private readonly Maze _maze;
+    private Status _status;
+    private Point _location;
+
+    public Player(Maze maze)
+    {
+        _maze = maze;
+        _status = Status.Lost;
+        _location = maze.StartLocation;
+    }
+
+    public string GetStatus() => _status.ToString();
+
+    public void ProcessDirections(string[] directionStrings)
+    {
+        int i = 0;        
+
+        while(_status.CanContinue && i < directionStrings.Length)
+        {
+            //Console.WriteLine($"Position: [{_location.X},{_location.Y}]. Status: {_status.ToString()}. Direction: {directionStrings[i]}");
+            _status = Move(Direction.Parse(directionStrings[i++]));
+        }
+    }
+
+    private Status Move(Direction d)
+    {
+        _location = d.Move(_location);
+        int val;
+        return _maze.TryFetchValue(_location, out val) ? Tile.Parse(val).Status : Status.Dead;
+    }
+}
+
+class Maze
+{
+    private readonly int[,] _maze;
+    private readonly int _width;
+    private Point _startLocation;
+    
+    public Maze(int[,] maze)
+    {
+        _maze = maze;
+        _width = (int)Math.Sqrt(_maze.Length);
+        SetStartLocation();
+    }
+
+    public bool TryFetchValue(Point p, out int value)
+    {
+        if (IsInsideMaze(p))
+        {
+            value = _maze[p.Y, p.X];
+            return true;
+        }
+
+        value = -1;
+        return false;
+    }
+
+    public Point StartLocation { get => _startLocation; } 
+
+    private void SetStartLocation()
+    {
+        for (int y = 0; y < _width; y++)
+        {
+            for (int x = 0; x < _width; x++)
+            {
+                Tile.Parse(_maze[y,x]).TrySetStartLocation(new Point(x,y), ref _startLocation);       
+            }
+        }
+    }
+
+    private bool IsInsideMaze(Point p) => p.X >= 0 &&  p.X < _width && 0 <= p.Y && p.Y < _width;
+}
+
+class Status
+{
+    public readonly static Status Finish = new Status(false, "Finish");
+    public readonly static Status Dead = new Status(false, "Dead");
+    public readonly static Status Lost = new Status(true, "Lost");
+    
+    public Status(bool canContinue, string statusString )
+    {
+        CanContinue = canContinue;
+        StatusString = statusString;
+
+    }
+    public bool CanContinue { get; private set; }        
+    public string StatusString { get; private set; } 
+    override public string ToString() => StatusString;       
+}
+
+class Direction
+{
+    private readonly int _xDelta;
+    private readonly int _yDelta;
+    private static readonly IImmutableDictionary<string, Direction> _directions = new Dictionary<string, Direction> { { "N", new Direction(0, -1)}, {"S", new Direction(0, 1)}, { "E", new Direction(1, 0)}, {"W", new Direction(-1, 0)} }.ToImmutableDictionary();
+    
+    public Direction(int xDelta, int yDelta)
+    {
+        _xDelta = xDelta;
+        _yDelta = yDelta;
+    }
+    public Point Move(Point start)
+    {
+        return new Point(start.X + _xDelta, start.Y + _yDelta );
+    }
+    
+    public static Direction Parse(string directionString) => _directions[directionString];
+}
+
+class Tile
+{
+    private static readonly Tile[] _tiles = new Tile[] {new Tile(Status.Lost, false), new Tile(Status.Dead, false), new Tile(Status.Lost, true), new Tile(Status.Finish, false) }; 
+
+    public Tile(Status status, bool isStartLocation)
+    {
+        this.Status = status;
+        this.IsStartLocation = isStartLocation;
+    }
+
+    public bool TrySetStartLocation(Point p, ref Point location)
+    {
+        if (IsStartLocation)
+        {
+            location = p; 
+        }
+        return IsStartLocation;
+    }
+
+    public Status Status { get; private set; }
+    public bool IsStartLocation { get; private set; }   
+    
+    public static Tile Parse(int tileValue) => _tiles[tileValue];
+}
+
+struct Point
+{
+    public int X { get; private set; }
+    public int Y { get; private set; }
+
+    public Point(int X, int Y)
+    {
+        this.X = X;
+        this.Y = Y;
+    }
 }
 
 #!csharp
