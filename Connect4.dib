@@ -1,0 +1,461 @@
+#!csharp
+
+#r "nuget: NUnit, 3.13.2"
+
+#!markdown
+
+https://www.codewars.com/kata/586c0909c1923fdb89002031/train/csharp
+
+If a player successfully has 4 discs horizontally, vertically or diagonally then you should return "Player n wins!” where n is the current player either 1 or 2.
+
+If a player attempts to place a disc in a column that is full then you should return ”Column full!” and the next move must be taken by the same player.
+
+If the game has been won by a player, any following moves should return ”Game has finished!”.
+
+Any other move should return ”Player n has a turn” where n is the current player either 1 or 2.
+ 
+Player 1 starts the game every time and alternates with player 2.
+
+The columns are numbered 0-6 left to right.
+
+#!csharp
+
+class Connect4
+{
+    private const int ROWS = 6;
+    private const int COLUMNS = 7;
+    private const int IN_A_ROW = 4;
+    private int nextPlayer = 1;
+    private readonly int[,] board;
+    private readonly int[] columnRow;
+    private bool hasWon = false;
+
+    public Connect4()
+    {
+       // setup 6*7 board
+       board = new int [,] { {0,0,0,0,0,0}, {0,0,0,0,0,0}, {0,0,0,0,0,0}, {0,0,0,0,0,0}, {0,0,0,0,0,0}, {0,0,0,0,0,0}, {0,0,0,0,0,0} };
+       columnRow = new int[] {0,0,0,0,0,0,0};
+    }
+
+    public string play(int col)
+    {
+      if (hasWon)
+      {
+        return "Game has finished!";
+      }
+
+      var row = columnRow[col]++;
+      if (row >= ROWS)
+      {
+        return "Column full!";
+      }
+      
+      var currentPlayer = nextPlayer;
+
+      board[col, row] = currentPlayer;
+
+      //PrintBoard();
+
+      if (CheckHasWon(row, col, currentPlayer))
+      {
+        return $"Player {currentPlayer} wins!";
+      }
+
+      nextPlayer = nextPlayer == 2 ? 1 : 2;
+      return $"Player {currentPlayer} has a turn";
+    }
+
+    private bool CheckHasWon(int row, int col, int player)
+    {
+       return CheckVertical(row, col, player) || CheckHorizontal(row, col, player) || CheckDiagonal1(row, col, player) || CheckDiagonal2(row, col, player);
+    }
+
+    private bool CheckVertical(int row, int col, int player)
+    {
+       int count = 0;
+       bool canContinue = true;
+       int checkRow = row;
+       int checkCol = col;
+
+       while(canContinue)
+       {         
+          bool match =  board[checkCol, checkRow] == player;
+          if (match)
+          {
+            count++;
+          }
+          hasWon = count == IN_A_ROW;
+
+          // move down
+          checkRow--;
+          
+          canContinue = !hasWon && match && checkRow >= 0;
+       }
+       
+       return hasWon;
+    }
+
+    private bool CheckHorizontal(int row, int col, int player)
+    {
+       int count = 0;
+       bool canContinue = true;
+       int checkRow = row;
+       int checkCol = GetLeftMostColumn(row, col - 1,player);
+
+
+       while(canContinue)
+       {         
+          bool match =  board[checkCol, checkRow] == player;
+          if (match)
+          {
+            count++;
+          }
+          hasWon = count == IN_A_ROW;
+
+          // move right
+          checkCol++;
+          
+          canContinue = !hasWon && match && checkCol < COLUMNS;
+       }
+       
+       return hasWon;
+    }
+
+    private bool CheckDiagonal1(int row, int col, int player)
+    {
+       int count = 0;
+       bool canContinue = true;
+       (int checkRow, int checkCol) = GetTopRightPosition(row+1, col + 1,player);
+
+
+       while(canContinue)
+       {         
+          bool match =  board[checkCol, checkRow] == player;
+          if (match)
+          {
+            count++;
+          }
+          hasWon = count == IN_A_ROW;
+
+          // move down diagonally left
+          checkCol--;
+          checkRow--;
+          
+          canContinue = !hasWon && match && checkCol >= 0 && checkRow >= 0;
+       }
+       
+       return hasWon;
+    }
+
+    private bool CheckDiagonal2(int row, int col, int player)
+    {
+       int count = 0;
+       bool canContinue = true;
+       (int checkRow, int checkCol) = GetTopLeftPosition(row-1, col + 1,player);
+
+
+       while(canContinue)
+       {         
+          bool match =  board[checkCol, checkRow] == player;
+          if (match)
+          {
+            count++;
+          }
+          hasWon = count == IN_A_ROW;
+
+          // move down diagonally right
+          checkCol--;
+          checkRow++;
+          
+          canContinue = !hasWon && match && checkCol >= 0 && checkRow < ROWS;
+       }
+       
+       return hasWon;
+    }
+
+    private int GetLeftMostColumn(int row, int col, int player)
+    {
+      if(col == -1 || board[col, row] != player)
+      {
+        return col + 1;
+      }
+
+      return GetLeftMostColumn(row, col - 1,player);
+    }
+
+    private (int, int) GetTopRightPosition(int row, int col, int player)
+    {
+      if(col == COLUMNS || row == ROWS || board[col, row] != player)
+      {
+        return (row -1,col - 1);
+      }
+
+      return GetTopRightPosition(row+1, col + 1,player);
+    }
+
+    private (int, int) GetTopLeftPosition(int row, int col, int player)
+    {
+      if(col == COLUMNS || row == -1 || board[col, row] != player)
+      {
+        return (row +1,col - 1);
+      }
+
+      return GetTopLeftPosition(row-1, col + 1,player);
+    }
+
+    private void PrintBoard()
+    {
+      for (int row = ROWS-1; row >= 0; row--)
+      {
+        for (int col = 0; col < COLUMNS; col++)
+        {
+          var place = board[col,row] == 0 ? " " : board[col,row].ToString();
+          Console.Write($"|{place}");
+        }
+        Console.WriteLine("|");
+      }
+      Console.WriteLine("- - - - - - - -");      
+    }
+
+}
+
+var game = new Connect4();
+Console.WriteLine(game.play(0));
+Console.WriteLine(game.play(1));
+Console.WriteLine(game.play(1));
+Console.WriteLine(game.play(2));
+Console.WriteLine(game.play(3));
+Console.WriteLine(game.play(2));
+Console.WriteLine(game.play(2));
+Console.WriteLine(game.play(3));
+Console.WriteLine(game.play(3));
+Console.WriteLine(game.play(4));
+Console.WriteLine(game.play(3));
+
+#!csharp
+
+using NUnit.Framework;
+
+
+[TestFixture]
+public class KataTestClass
+{
+    private Connect4 test1 = new Connect4();
+    private Connect4 test2 = new Connect4();
+    private Connect4 test3 = new Connect4();
+    private Connect4 test4 = new Connect4();
+    private Connect4 test5 = new Connect4();
+    
+    // Test 1
+    [TestCase]
+    public void BasicTest1a()
+    {
+        Assert.AreEqual("Player 1 has a turn", test1.play(0), "Should return: 'Player 1 has a turn'");
+    }
+    [TestCase]
+    public void BasicTest1b()
+    {
+        Assert.AreEqual("Player 2 has a turn", test1.play(0), "Should return: 'Player 2 has a turn'");
+    }
+    
+    // Test 2
+    [TestCase]
+    public void BasicTest2a()
+    {
+        Assert.AreEqual("Player 1 has a turn", test2.play(0), "Should return: 'Player 1 has a turn'");
+    }
+    [TestCase]
+    public void BasicTest2b()
+    {
+        Assert.AreEqual("Player 2 has a turn", test2.play(1), "Should return: 'Player 2 has a turn'");
+    }
+    [TestCase]
+    public void BasicTest2c()
+    {
+        Assert.AreEqual("Player 1 has a turn", test2.play(0), "Should return: 'Player 1 has a turn'");
+    }
+    [TestCase]
+    public void BasicTest2d()
+    {
+        Assert.AreEqual("Player 2 has a turn", test2.play(1), "Should return: 'Player 2 has a turn'");
+    }
+    [TestCase]
+    public void BasicTest2e()
+    {
+        Assert.AreEqual("Player 1 has a turn", test2.play(0), "Should return: 'Player 1 has a turn'");
+    }
+    [TestCase]
+    public void BasicTest2f()
+    {
+        Assert.AreEqual("Player 2 has a turn", test2.play(1), "Should return: 'Player 2 has a turn'");
+    }
+    [TestCase]
+    public void BasicTest2g()
+    {
+        Assert.AreEqual("Player 1 wins!", test2.play(0), "Should return: 'Player 1 wins!'");
+    }
+    
+    // Test 3
+    [TestCase]
+    public void BasicTest3a()
+    {
+        Assert.AreEqual("Player 1 has a turn", test3.play(4), "Should return: 'Player 1 has a turn'");
+    }
+    [TestCase]
+    public void BasicTest3b()
+    {
+        Assert.AreEqual("Player 2 has a turn", test3.play(4), "Should return: 'Player 2 has a turn'");
+    }
+    [TestCase]
+    public void BasicTest3c()
+    {
+        Assert.AreEqual("Player 1 has a turn", test3.play(4), "Should return: 'Player 1 has a turn'");
+    }
+    [TestCase]
+    public void BasicTest3d()
+    {
+        Assert.AreEqual("Player 2 has a turn", test3.play(4), "Should return: 'Player 2 has a turn'");
+    }
+    [TestCase]
+    public void BasicTest3e()
+    {
+        Assert.AreEqual("Player 1 has a turn", test3.play(4), "Should return: 'Player 1 has a turn'");
+    }
+    [TestCase]
+    public void BasicTest3f()
+    {
+        Assert.AreEqual("Player 2 has a turn", test3.play(4), "Should return: 'Player 2 has a turn'");
+    }
+    [TestCase]
+    public void BasicTest3g()
+    {
+        Assert.AreEqual("Column full!", test3.play(4), "Should return: 'Column full!'");
+    }
+
+
+    // Test 4
+    [TestCase]
+    public void BasicTest4a()
+    {
+        Assert.AreEqual("Player 1 has a turn", test4.play(1), "Should return: 'Player 1 has a turn'");
+    }
+    [TestCase]
+    public void BasicTest4b()
+    {
+        Assert.AreEqual("Player 2 has a turn", test4.play(1), "Should return: 'Player 2 has a turn'");
+    }
+    [TestCase]
+    public void BasicTest4c()
+    {
+        Assert.AreEqual("Player 1 has a turn", test4.play(2), "Should return: 'Player 1 has a turn'");
+    }
+    [TestCase]
+    public void BasicTest4d()
+    {
+        Assert.AreEqual("Player 2 has a turn", test4.play(2), "Should return: 'Player 2 has a turn'");
+    }
+    [TestCase]
+    public void BasicTest4e()
+    {
+        Assert.AreEqual("Player 1 has a turn", test4.play(3), "Should return: 'Player 1 has a turn'");
+    }
+    [TestCase]
+    public void BasicTest4f()
+    {
+        Assert.AreEqual("Player 2 has a turn", test4.play(3), "Should return: 'Player 2 has a turn'");
+    }
+    [TestCase]
+    public void BasicTest4g()
+    {
+        Assert.AreEqual("Player 1 wins!", test4.play(4), "Should return: 'Player 1 wins!'");
+    }
+    [TestCase]
+    public void BasicTest4h()
+    {
+        Assert.AreEqual("Game has finished!", test4.play(4), "Should return: 'Game has finished!'");
+    }
+
+    // Test 5
+    [TestCase]
+    public void BasicTest5a()
+    {
+        Assert.AreEqual("Player 1 has a turn", test5.play(0), "Should return: 'Player 1 has a turn'");
+    }
+
+    [TestCase]
+    public void BasicTest5b()
+    {
+        Assert.AreEqual("Player 2 has a turn", test5.play(1), "Should return: 'Player 2 has a turn'");
+    }
+
+    [TestCase]
+    public void BasicTest5c()
+    {
+        Assert.AreEqual("Player 1 has a turn", test5.play(1), "Should return: 'Player 1 has a turn'");
+    }
+
+    [TestCase]
+    public void BasicTest5d()
+    {
+        Assert.AreEqual("Player 2 has a turn", test5.play(2), "Should return: 'Player 2 has a turn'");
+    }
+
+    [TestCase]
+    public void BasicTest5e()
+    {
+        Assert.AreEqual("Player 1 has a turn", test5.play(3), "Should return: 'Player 1 has a turn'");
+    }
+
+    [TestCase]
+    public void BasicTest5f()
+    {
+        Assert.AreEqual("Player 2 has a turn", test5.play(2), "Should return: 'Player 2 has a turn'");
+    }
+
+    [TestCase]
+    public void BasicTest5g()
+    {
+        Assert.AreEqual("Player 1 has a turn", test5.play(2), "Should return: 'Player 1 has a turn'");
+    }
+
+    [TestCase]
+    public void BasicTest5h()
+    {
+        Assert.AreEqual("Player 2 has a turn", test5.play(3), "Should return: 'Player 2 has a turn'");
+    }
+
+    [TestCase]
+    public void BasicTest5i()
+    {
+        Assert.AreEqual("Player 1 has a turn", test5.play(3), "Should return: 'Player 1 has a turn'");
+    }
+
+    [TestCase]
+    public void BasicTest5j()
+    {
+        Assert.AreEqual("Player 2 has a turn", test5.play(4), "Should return: 'Player 2 has a turn'");
+    }
+
+    [TestCase]
+    public void BasicTest5k()
+    {
+        Assert.AreEqual("Player 1 wins!", test5.play(3), "Should return: 'Player 1 wins!'");
+    }
+
+}
+
+var tc = new KataTestClass();
+
+#!csharp
+
+using System;
+using System.Reflection;
+using System.Linq;
+using NUnit.Framework;
+
+Type type = typeof(KataTestClass);
+foreach (MethodInfo m in type.GetMethods().Where(m => m.GetCustomAttributes(typeof(TestCaseAttribute), false).Length > 0)) {
+    
+    Console.WriteLine(m.Name);
+    m.Invoke(tc, new object[]{});
+}  
