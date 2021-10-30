@@ -20,7 +20,7 @@ The columns are numbered 0-6 left to right.
 
 #!csharp
 
-// first solution
+// First solution
 class Connect4
 {
     private const int ROWS = 6;
@@ -277,8 +277,6 @@ class Connect4
     }
 }
 
-
-
 class Board
 {
     private const int ROWS = 6;
@@ -297,9 +295,13 @@ class Board
       return IsMatch(new Position(col, row), checkVal);
     }
 
-    public bool AddToColumn(int col, int val)
+    public int AddToColumn(int col, int val)
     {
-      return TrySetValue(new Position(col, columnRow[col]++), val);
+      if (!TrySetValue(new Position(col, columnRow[col]), val))
+      {
+        return -1;
+      }
+      return columnRow[col]++;
     }
 
     public int ColumnRow(int col) => columnRow[col];
@@ -351,7 +353,7 @@ class Player
   public Player(int id)
   {
     Id = id;
-    Status = new Status($"Player {Id} has a turn", true, false);
+    Status = Status.HasATurn(Id); 
   }
 
   public Player NextPlayer {get; set;}
@@ -370,7 +372,7 @@ class Player
     
     if (CheckHasWon(board, currentPosition, Id))
     {
-      Status = new Status($"Player {Id} wins!", false, true);
+      Status = Status.IsWinner(Id);
     }
 
     return Status;
@@ -378,11 +380,9 @@ class Player
 
   private bool AddToBoard(Board board, int col)
   {
-    currentPosition = new Position(col, board.ColumnRow(col));
-    if(!board.AddToColumn(col, Id))
-    {
-      Status = new Status("Column full!", false, false);      
-    }
+    int row = board.AddToColumn(col, Id);
+    currentPosition = row >= 0 ? new Position(col, row) : currentPosition;
+    Status = row >= 0 ? Status.HasATurn(Id) : Status.ColumnFull(Id);
     return Status.HasPlayed;
   }
 
@@ -433,7 +433,7 @@ class Position
 
 class Status
 {
-  public Status(string description, bool hasPlayed, bool hasWon) 
+  private Status(string description, bool hasPlayed, bool hasWon) 
   {
     Description = description;
     HasPlayed = hasPlayed;
@@ -444,6 +444,9 @@ class Status
   public bool HasPlayed { get; private set; }
   public bool HasWon { get; private set; }
   public override string ToString() => Description;
+  public static Status HasATurn(int Id) => new Status($"Player {Id} has a turn", true, false);
+  public static Status ColumnFull(int Id) => new Status("Column full!", false, false);
+  public static Status IsWinner(int Id) => new Status($"Player {Id} wins!", false, true);
 }
 
 class WinChecker
@@ -458,19 +461,23 @@ class WinChecker
       _checkDirection = checkDirection;
     }
 
-    public bool HasWon(Board board, Position checkPosition, int checkValue)
+    public bool HasWon(Board board, Position p, int checkValue)
     {
-      int inARowCount = 0;
-      var p = GetStartPosition(board, checkPosition.Go(_startDirection), checkValue); 
+      var start = GetStartPosition(board, p.Go(_startDirection), checkValue); 
+      int inARowCount = GetInARowCount(board, start, checkValue, 1);
       
-      do
-      {
-        inARowCount++;
-        p = p.Go(_checkDirection);
-
-      } while (!(inARowCount == WIN) && board.IsMatch(p, checkValue));
-
       return inARowCount == WIN;
+    }
+
+    private int GetInARowCount(Board board, Position checkPos, int checkValue, int currentCount)
+    {
+      var nextPos = checkPos.Go(_checkDirection);
+      if(currentCount < WIN && board.IsMatch(nextPos, checkValue))
+      {
+        return GetInARowCount(board, nextPos, checkValue, currentCount+1);
+      }
+
+      return currentCount;
     }
 
     private Position GetStartPosition(Board board, Position p, int checkValue)
@@ -498,6 +505,7 @@ public class KataTestClass
     private Connect4 test3 = new Connect4();
     private Connect4 test4 = new Connect4();
     private Connect4 test5 = new Connect4();
+    private Connect4 test6 = new Connect4();
     
     // Test 1
     [TestCase]
@@ -692,6 +700,55 @@ public class KataTestClass
     public void BasicTest5k()
     {
         Assert.AreEqual("Player 1 wins!", test5.play(3), "Should return: 'Player 1 wins!'");
+    }
+
+    // Test 6
+    [TestCase]
+    public void BasicTest6a()
+    {
+        Assert.AreEqual("Player 1 has a turn", test6.play(0), "Should return: 'Player 1 has a turn'");
+    }
+
+    [TestCase]
+    public void BasicTest6b()
+    {
+        Assert.AreEqual("Player 2 has a turn", test6.play(0), "Should return: 'Player 2 has a turn'");
+    }
+
+    [TestCase]
+    public void BasicTest6c()
+    {
+        Assert.AreEqual("Player 1 has a turn", test6.play(0), "Should return: 'Player 1 has a turn'");
+    }
+
+    [TestCase]
+    public void BasicTest6d()
+    {
+        Assert.AreEqual("Player 2 has a turn", test6.play(0), "Should return: 'Player 2 has a turn'");
+    }
+
+    [TestCase]
+    public void BasicTest6e()
+    {
+        Assert.AreEqual("Player 1 has a turn", test6.play(0), "Should return: 'Player 1 has a turn'");
+    }
+
+    [TestCase]
+    public void BasicTest6f()
+    {
+        Assert.AreEqual("Player 2 has a turn", test6.play(0), "Should return: 'Player 2 has a turn'");
+    }
+
+    [TestCase]
+    public void BasicTest6g()
+    {
+        Assert.AreEqual("Column full!", test6.play(0), "Should return: 'Column full!'");
+    }
+
+    [TestCase]
+    public void BasicTest6h()
+    {
+        Assert.AreEqual("Player 1 has a turn", test6.play(1), "Should return: 'Player 1 has a turn'");
     }
 
 }
