@@ -20,6 +20,7 @@ The columns are numbered 0-6 left to right.
 
 #!csharp
 
+// first solution
 class Connect4
 {
     private const int ROWS = 6;
@@ -234,6 +235,329 @@ Console.WriteLine(game.play(3));
 
 #!csharp
 
+// Final Solution
+class Connect4
+{
+    private const int ROWS = 6;
+    private const int COLUMNS = 7;
+    private const int IN_A_ROW = 4;
+    private int nextPlayer = 1;
+    private bool hasWon = false;
+    private readonly Board board;
+
+    public Connect4()
+    {
+       board = new Board();
+    }
+
+    public string play(int col)
+    {
+      if (hasWon)
+      {
+        return "Game has finished!";
+      }
+
+      var currentPlayer = nextPlayer;
+
+      int row = board.ColumnRow(col);
+
+      if(!board.AddToColumn(col, currentPlayer))
+      {
+        return "Column full!";
+      }
+
+      //board.Print();
+
+      if (CheckHasWon(new Position(col, row), currentPlayer))
+      {
+        hasWon = true;
+        return $"Player {currentPlayer} wins!";
+      }
+
+      SetNextPlayer();      
+      return $"Player {currentPlayer} has a turn";
+    }
+
+    private bool CheckHasWon(Position p, int player)
+    {
+       var checkVertical = new WinChecker(Position.GoUp, Position.GoDown, false);
+       var checkHorizontal = new WinChecker(Position.GoLeft, Position.GoRight, false);
+       var checkDiagonal1 = new WinChecker(Position.GoUpRight, Position.GoDownLeft, false);
+       var checkDiagonal2 = new WinChecker(Position.GoUpLeft, Position.GoDownRight, false);
+       return checkVertical.HasWon(board, p, player) || 
+              checkHorizontal.HasWon(board, p, player) || 
+              checkDiagonal1.HasWon(board, p, player)  || 
+              checkDiagonal2.HasWon(board, p, player);
+    }
+
+    private bool CheckVertical(int row, int col, int player)
+    {
+       int count = 0;
+       int checkRow = row;
+       
+       do
+       {
+          count++;
+          hasWon = count == IN_A_ROW;
+
+          // move down
+          checkRow--;
+       } while (!hasWon && board.IsMatch(col, checkRow, player));
+       
+       return hasWon;
+    }
+
+    private bool CheckHorizontal(int row, int col, int player)
+    {
+       int count = 0;
+       var p = new Position(GetLeftMostColumn(row, col - 1,player), row);
+       
+       do
+       {
+          count++;
+          hasWon = count == IN_A_ROW;
+
+          // move right
+          p = new Position(p.Col + 1, p.Row);
+
+       } while (!hasWon && board.IsMatch(p, player));
+
+       return hasWon;
+    }
+
+    private bool CheckDiagonal1(int row, int col, int player)
+    {
+       int count = 0;
+       bool keepChecking = true;
+       (int checkRow, int checkCol) = GetTopRightPosition(row+1, col + 1,player);
+
+
+       while(keepChecking)
+       {         
+          bool match =  board.IsMatch(checkCol, checkRow, player);
+          if (match)
+          {
+            count++;
+          }
+          hasWon = count == IN_A_ROW;
+
+          // move down diagonally left
+          checkCol--;
+          checkRow--;
+          
+          keepChecking = !hasWon && match && checkCol >= 0 && checkRow >= 0;
+       }
+       
+       return hasWon;
+    }
+
+    private bool CheckDiagonal2(int row, int col, int player)
+    {
+       int count = 0;
+       bool keepChecking = true;
+       (int checkRow, int checkCol) = GetTopLeftPosition(row-1, col + 1,player);
+
+
+       while(keepChecking)
+       {         
+          bool match =  board.IsMatch(checkCol, checkRow, player);
+          if (match)
+          {
+            count++;
+          }
+          hasWon = count == IN_A_ROW;
+
+          // move down diagonally right
+          checkCol--;
+          checkRow++;
+          
+          keepChecking = !hasWon && match && checkCol >= 0 && checkRow < ROWS;
+       }
+       
+       return hasWon;
+    }
+
+    private int GetLeftMostColumn(int row, int col, int player)
+    {
+      if(!board.IsMatch(col, row, player))
+      {
+        return col + 1;
+      }
+
+      return GetLeftMostColumn(row, col - 1,player);
+    }
+
+    private (int, int) GetTopRightPosition(int row, int col, int player)
+    {
+      if(!board.IsMatch(col, row, player))
+      {
+        return (row -1,col - 1);
+      }
+
+      return GetTopRightPosition(row+1, col + 1,player);
+    }
+
+    private (int, int) GetTopLeftPosition(int row, int col, int player)
+    {
+      if(!board.IsMatch(col, row, player))
+      {
+        return (row +1,col - 1);
+      }
+
+      return GetTopLeftPosition(row-1, col + 1,player);
+    }   
+    
+    private void SetNextPlayer() => nextPlayer = nextPlayer == 2 ? 1 : 2;
+}
+
+class WinChecker
+{
+    private const int IN_A_ROW = 4;
+    private readonly Position _startDirection;
+    private readonly Position _checkDirection;
+    private readonly bool _debug;
+
+    public WinChecker(Position startDirection, Position checkDirection, bool debug)
+    {
+      _startDirection = startDirection;
+      _checkDirection = checkDirection;
+      _debug = debug;
+    }
+
+    public bool HasWon(Board board, Position checkPosition, int checkValue)
+    {
+      bool hasWon;
+      int count = 0;
+      var p = GetStartPosition(board, checkPosition.ShiftBy(_startDirection), checkValue); 
+      
+      do
+      {
+        count++;
+        hasWon = count == IN_A_ROW;
+
+        if (_debug)
+        {
+          Console.WriteLine($"WinChecker. Position: {p}. Count: {count}. Haswon: {hasWon}");
+        }
+
+        p = p.ShiftBy(_checkDirection);
+
+      } while (!hasWon && board.IsMatch(p, checkValue));
+
+      return hasWon;
+    }
+
+    private Position GetStartPosition(Board board, Position p, int checkValue)
+    {
+      if(!board.IsMatch(p, checkValue))
+      {
+        return p.ShiftBy(_checkDirection);
+      }
+
+      return GetStartPosition(board, p.ShiftBy(_startDirection), checkValue);
+    }
+}
+
+class Board
+{
+    private const int ROWS = 6;
+    private const int COLUMNS = 7;
+    private readonly int[,] board = new int[COLUMNS, ROWS];
+    private readonly int[] columnRow = new int[COLUMNS];
+
+    public bool IsMatch(Position p, int checkVal)
+    {
+      int pointVal;
+      return TryGetValue(p, out pointVal) && checkVal == pointVal;
+    }
+
+    public bool IsMatch(int col, int row, int checkVal)
+    {
+      return IsMatch(new Position(col, row), checkVal);
+    }
+
+    public bool AddToColumn(int col, int val)
+    {
+      return TrySetValue(new Position(col, columnRow[col]++), val);
+    }
+
+    public int ColumnRow(int col) => columnRow[col];
+
+    public void Print()
+    {
+      for (int row = ROWS-1; row >= 0; row--)
+      {
+        for (int col = 0; col < COLUMNS; col++)
+        {
+          var place = IsMatch(col,row, 0) ? " " : board[col,row].ToString();
+          Console.Write($"|{place}");
+        }
+        Console.WriteLine("|");
+      }
+      Console.WriteLine("- - - - - - - -");      
+    }
+    
+    private bool TryGetValue(Position p, out int val)
+    {
+      if (IsInBounds(p))
+      {
+        val = board[p.Col, p.Row];
+        return true;
+      }
+
+      val = -1;
+      return false;
+    }
+
+    private bool TrySetValue(Position p, int val)
+    {
+      if (IsInBounds(p))
+      {
+        board[p.Col, p.Row] = val;
+        return true;
+      }
+
+      return false;
+    }
+    
+    private bool IsInBounds(Position p) => (0 <= p.Col && p.Col < COLUMNS && 0 <= p.Row && p.Row < ROWS);
+}
+
+class Position
+{
+  public Position(int col, int row)
+  {
+    Col = col;
+    Row = row;
+  }
+
+  public int Col {get; private set;}
+  public int Row {get; private set;}
+
+  public Position ShiftBy(Position delta)
+  {
+    return new Position(this.Col + delta.Col, this.Row + delta.Row);
+  }
+
+  public override string ToString()
+  {
+     return $"[{Col},{Row}]";
+  }
+
+  public static readonly Position GoLeft = new Position(-1, 0);
+  public static readonly Position GoRight = new Position(1, 0);
+  public static readonly Position GoUp = new Position(0, 1);
+  public static readonly Position GoDown = new Position(0, -1);
+  public static readonly Position GoUpLeft = new Position(-1, 1);
+  public static readonly Position GoUpRight = new Position(1, 1);
+  public static readonly Position GoDownLeft = new Position(-1, -1);
+  public static readonly Position GoDownRight = new Position(1, -1);
+
+}
+
+#!csharp
+
+// KataTestClass
 using NUnit.Framework;
 
 
@@ -331,7 +655,6 @@ public class KataTestClass
     {
         Assert.AreEqual("Column full!", test3.play(4), "Should return: 'Column full!'");
     }
-
 
     // Test 4
     [TestCase]
@@ -448,6 +771,7 @@ var tc = new KataTestClass();
 
 #!csharp
 
+// Run Tests
 using System;
 using System.Reflection;
 using System.Linq;
