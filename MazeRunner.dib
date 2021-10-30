@@ -35,6 +35,7 @@ direction = ["N","N","N","N","N","E","E","E","E","E"] == "Finish"
 
 #!csharp
 
+// first solution
 class Kata
 {
     public string mazeRunner(int[,] maze, string[] directions)
@@ -126,6 +127,7 @@ class Maze
 
 #!csharp
 
+// second solution
 class Kata
 {
     public string mazeRunner(int[,] maze, string[] directions)
@@ -236,6 +238,7 @@ class Maze
 
 #!csharp
 
+// third solution
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -408,6 +411,7 @@ class Kata
 
 #!csharp
 
+// Test class
 using NUnit.Framework;
 using System;
 
@@ -481,6 +485,7 @@ class KataTestClass
 
 #!csharp
 
+// Final solution
 using System;
 using System.Collections.Immutable;
 
