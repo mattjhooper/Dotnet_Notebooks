@@ -1,0 +1,344 @@
+#!csharp
+
+#r "nuget: NUnit, 3.13.2"
+
+#!csharp
+
+// Version 1
+using System;
+public class Dinglemouse
+{
+    public static int PeakHeight(char[][] mountain)
+    {
+        var m = new Mountain(mountain);
+        m.Print();
+
+        int level = 1;
+        int previousLevel = 0;
+
+        while (m.CheckLevel(ConvertToChar(level), ConvertToChar(previousLevel)))
+        {
+            level++;
+            previousLevel++;
+           // m.Print();
+        }        
+
+        return previousLevel;
+    }
+
+    static char ConvertToChar(int level)
+    {
+        if(level == 0)
+        {
+            return Mountain.SPACE;
+        }
+
+        return (char)('0'+ level);
+    }
+}
+
+public class Mountain
+{
+    private readonly char[][] _m; 
+
+    private readonly Point[] _directions = {Point.Left, Point.Up, Point.Right, Point.Down};
+
+    public const char ROCK = '^';
+    public const char SPACE = ' ';
+    
+    public Mountain(char[][] m)
+    {
+        _m = m;
+    }
+
+    public char this[Point p]
+    {
+        get 
+        {
+            if(InBounds(p))
+            {
+                return _m[p.Y][p.X];
+            }
+
+            return SPACE;
+        }
+
+        set
+        {
+            if(InBounds(p))
+            {
+                _m[p.Y][p.X] = value;
+            }
+        }
+        
+        
+    }
+
+    public bool CheckLevel(char level, char previousLevel)
+    {        
+        bool foundLevel = false;
+        for(int y = 0; y<_m.Length; y++)
+        {            
+            for(int x = 0; x<_m[y].Length; x++)
+            {
+                var p = new Point(x,y);
+                if (this[p] == ROCK)                
+                {
+                    bool keepChecking = true;
+                    int direction = 0;
+                    do
+                    {
+                        char val = this[p.Move(_directions[direction])];
+
+                        if(val == previousLevel)
+                        {
+                            this[p] = level;
+                            keepChecking = false;
+                            foundLevel = true;
+                        }
+
+                        direction++;
+                        keepChecking = keepChecking && direction < _directions.Length;
+                    } while (keepChecking);                    
+                }
+            }
+        }
+        return foundLevel;
+    }
+
+    public bool InBounds(Point p)
+    {
+        return 0 <= p.Y && p.Y < _m.Length && 0 <= p.X && p.X < _m[p.Y].Length;
+    }
+    
+    public void Print()
+    {
+        for(int y = 0; y<_m.Length; y++)
+        {            
+            Console.WriteLine(_m[y]);
+        }
+    }
+}
+
+public class Point
+{
+    public Point (int x, int y)
+    {
+        X = x;
+        Y = y;
+    }
+
+    public int X { get; private set; }
+    public int Y { get; private set; }
+
+    public Point Move(Point delta)
+    {
+        return new Point(this.X + delta.X, this.Y + delta.Y);
+    }
+
+    public override string ToString()
+    {
+        return $"[{X},{Y}]";
+    }
+
+    public static readonly Point Left = new Point(-1, 0);
+    public static readonly Point Right = new Point(1, 0);
+    public static readonly Point Up = new Point(0, 1);
+    public static readonly Point Down = new Point(0, -1);
+}
+
+#!csharp
+
+// Version 2
+using System;
+using System.Collections.Generic;
+
+public class Dinglemouse
+{
+    public static int PeakHeight(char[][] mountain)
+    {
+        var m = new Mountain(mountain);
+        m.Print();
+
+        return m.GetPeakHeight();
+    }
+
+    
+}
+
+public class Mountain : IEnumerable<Point>
+{
+    private readonly char[][] _m; 
+
+    private readonly Point[] _directions = {Point.Left, Point.Up, Point.Right, Point.Down};
+
+    public const char ROCK = '^';
+    public const char SPACE = ' ';
+    
+    public Mountain(char[][] m)
+    {
+        _m = m;
+    }
+
+    public char this[Point p]
+    {
+        get 
+        {
+            if(InBounds(p))
+            {
+                return _m[p.Y][p.X];
+            }
+
+            return SPACE;
+        }
+
+        set
+        {
+            if(InBounds(p))
+            {
+                _m[p.Y][p.X] = value;
+            }
+        }                
+    }
+
+    public int GetPeakHeight()
+    {
+        return MaxLevel(1);
+    }
+
+    private int MaxLevel(int level)
+    {
+        int foundCount = 0;
+        
+        foreach(Point p in this)
+        {   
+            foundCount += IsLevel(p,level) ? 1 : 0;  
+        }
+     
+        return foundCount == 0 ?  level - 1 : MaxLevel(level + 1);
+    }
+    
+    private bool IsLevel(Point p, int level)
+    {
+        char marker = ToMarker(level);
+        char previousMarker = ToMarker(level-1);
+
+        if (this[p] == ROCK)                
+        {            
+            int direction = 0;
+            do
+            {
+                char val = this[p.Move(_directions[direction])];
+
+                if(val == previousMarker)
+                {
+                    this[p] = marker;
+                    return true;
+                }
+                
+            } while (++direction < _directions.Length);                    
+        }
+
+        return false;
+    }
+
+    public void Print()
+    {
+        for(int y = 0; y<_m.Length; y++)
+        {            
+            Console.WriteLine(_m[y]);
+        }
+    }
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();    
+
+    public IEnumerator<Point> GetEnumerator()
+    {
+        for(int y = 0; y<_m.Length; y++)
+        {            
+            for(int x = 0; x<_m[y].Length; x++)
+            {
+                yield return new Point(x,y);
+            }
+        }
+    }
+
+    private bool InBounds(Point p) => 0 <= p.Y && p.Y < _m.Length && 0 <= p.X && p.X < _m[p.Y].Length;    
+
+    private char ToMarker(int level)
+    {
+        if(level == 0)
+        {
+            return Mountain.SPACE;
+        }
+
+        return (char)('0'+ level);
+    }
+}
+
+public class Point
+{
+    public Point (int x, int y)
+    {
+        X = x;
+        Y = y;
+    }
+
+    public int X { get; private set; }
+    public int Y { get; private set; }
+
+    public Point Move(Point delta)
+    {
+        return new Point(this.X + delta.X, this.Y + delta.Y);
+    }
+
+    public override string ToString()
+    {
+        return $"[{X},{Y}]";
+    }
+
+    public static readonly Point Left = new Point(-1, 0);
+    public static readonly Point Right = new Point(1, 0);
+    public static readonly Point Up = new Point(0, 1);
+    public static readonly Point Down = new Point(0, -1);
+}
+
+#!csharp
+
+// ExampleTests
+using NUnit.Framework;
+using System;
+public class ExampleTests
+{
+    [Test]
+    public void Ex()
+    {
+        char[][] mountain =
+        {
+            "^^^^^^        ".ToCharArray(),
+            " ^^^^^^^^     ".ToCharArray(),
+            "  ^^^^^^^     ".ToCharArray(),
+            "  ^^^^^       ".ToCharArray(),
+            "  ^^^^^^^^^^^ ".ToCharArray(),
+            "  ^^^^^^      ".ToCharArray(),
+            "  ^^^^        ".ToCharArray()
+        };
+        Assert.AreEqual(3, Dinglemouse.PeakHeight(mountain));
+    }
+}
+
+#!csharp
+
+// Run Tests
+using System;
+using System.Reflection;
+using System.Linq;
+using NUnit.Framework;
+
+Type type = typeof(ExampleTests);
+var tc = new ExampleTests();
+foreach (MethodInfo m in type.GetMethods().Where(m => m.GetCustomAttributes(typeof(TestAttribute), false).Length > 0)) {
+    
+    Console.WriteLine(m.Name);
+    m.Invoke(tc, new object[]{});
+}  
