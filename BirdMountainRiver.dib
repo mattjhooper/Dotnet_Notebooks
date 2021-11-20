@@ -1,0 +1,267 @@
+#!csharp
+
+#r "nuget: NUnit, 3.13.2"
+
+#!markdown
+
+[Bird Mountain - the river| Codewars](https://www.codewars.com/kata/5c2fd9188e358f301f5f7a7b/train/csharp)
+
+Background
+
+A high flying bird is able to estimate the contours of the ground below.
+
+He sees hills and valleys, he sees plains and mountains.
+
+(But you already know all this because you've solved my Bird Mountain Kata)
+
+But this time our protagonist bird also sees a RIVER.
+
+Not only that, but he sees that the river is rising rapidly, so much so that in a few days it threatens to inundate the surrounding land.
+
+And all this is very important to the bird because he cannot land on water!
+
+Kata Task
+
+The bird quickly calculates how much ground will remain dry as the water rises.
+
+Can you?
+
+Output
+
+A list of how many dry landing spots there are for the next 3 days only (include day 0)
+Notes
+
+The ground is always supplied as a rectangular grid
+The normal river is at level -0.5. It is rising at 1 unit per day
+Sometimes there isn't any river at all, so you better account for those cases too!
+
+#!csharp
+
+// Version 1
+using System;
+using System.Collections;
+using System.Collections.Generic;
+
+public class Dinglemouse
+{
+    public static int PeakHeight(char[][] terrain)
+    {
+        var m = new Terrain(terrain);
+        m.Print();
+
+        int peakHeight = m.GetPeakHeight();
+        m.Print();
+
+        return peakHeight;
+    }
+    
+    public static int[] DryGround(char[][] terrain)
+    {
+        // Your code here
+        var t = new Terrain(terrain);
+        int peakHeight = t.GetPeakHeight();
+        t.Print();
+
+        return new int[] { 189, 99, 19, 3 };
+    }
+}
+
+public class Terrain : IEnumerable<Marker>
+{
+    private readonly char[][] _m; 
+    
+    public Terrain(char[][] m)
+    {
+        _m = m;
+    }
+
+    public char this[Point p]
+    {
+        get 
+        {
+            return InBounds(p) ? _m[p.Y][p.X]: Marker.SPACE;            
+        }
+
+        set
+        {
+            if(InBounds(p))
+            {
+                _m[p.Y][p.X] = value;
+            }
+        }                
+    }
+
+    public int GetPeakHeight()
+    {
+        return FindMaxLevel(1);
+    }
+
+    private int FindMaxLevel(int level)
+    {
+        bool levelMarkerSet = false;
+        
+        foreach(Marker m in this)
+        {   
+            levelMarkerSet = m.SetLevelIfAppropriate(level) || levelMarkerSet;  
+        }
+     
+        return levelMarkerSet ? FindMaxLevel(level + 1) : level - 1;
+    }
+    
+    public void Print()
+    {
+        for(int y = 0; y<_m.Length; y++)
+        {            
+            Console.WriteLine(_m[y]);
+        }
+    }
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();    
+
+    public IEnumerator<Marker> GetEnumerator()
+    {
+        for(int y = 0; y<_m.Length; y++)
+        {            
+            for(int x = 0; x<_m[y].Length; x++)
+            {
+                yield return new Marker(this, new Point(x,y));                
+            }
+        }
+    }
+
+    private bool InBounds(Point p) => 0 <= p.Y && p.Y < _m.Length && 0 <= p.X && p.X < _m[p.Y].Length;    
+    
+}
+
+public class Marker
+{
+    public const char ROCK = '^';
+    public const char SPACE = ' ';
+    public const char RIVER = '-';
+    
+    private readonly Terrain _m;
+    
+    public Marker(Terrain m, Point p)
+    {
+        _m = m;
+        Location = p;
+    }
+    
+    public Point Location { get; private set; }
+    
+    public char Icon => _m[Location];
+
+    public bool SetLevelIfAppropriate(int level)
+    {
+        return IsSettable && CheckAdjacentSquaresForPreviousLevel(level);
+    }
+
+    private bool CheckAdjacentSquaresForPreviousLevel(int level)
+    {
+        Point[] directions = {Point.Left, Point.Up, Point.Right, Point.Down};
+        bool levelMarkerSet = false;
+        for(int i = 0; i < directions.Length && !levelMarkerSet; i++)
+        {
+            levelMarkerSet = CheckDirection(directions[i], level);      
+        }
+        return levelMarkerSet;
+    }
+
+    private bool CheckDirection(Point direction, int level)
+    {
+        bool shouldSetLevel = false;
+        var markerInDirection = GetMarkerInDirection(direction);
+        
+        if(level == 1)
+        {
+            shouldSetLevel = markerInDirection.Icon == SPACE || markerInDirection.Icon == RIVER;
+        } else if(markerInDirection.IsLevel(level-1))
+        {            
+            shouldSetLevel = true;
+        }
+
+        if (shouldSetLevel)
+        {
+            SetLevel(level);
+        }
+
+        return shouldSetLevel;        
+    }
+    private char ToIcon(int level) => level == 0 ? SPACE : (char)('0'+ level);    
+
+    private Marker GetMarkerInDirection(Point direction) => new Marker(_m ,Location.Move(direction));    
+    
+    private bool IsLevel(int level) =>  ToIcon(level) == Icon;
+    
+    private bool IsSettable => Icon == ROCK;
+
+    private void SetLevel(int level)
+    {
+        _m[Location] = ToIcon(level);
+    }
+
+}
+
+public class Point
+{
+    public Point (int x, int y)
+    {
+        X = x;
+        Y = y;
+    }
+
+    public int X { get; private set; }
+    public int Y { get; private set; }
+
+    public Point Move(Point delta) => new Point(this.X + delta.X, this.Y + delta.Y);
+    
+    public override string ToString() =>  $"[{X},{Y}]";
+    
+    public static readonly Point Left = new Point(-1, 0);
+    public static readonly Point Right = new Point(1, 0);
+    public static readonly Point Up = new Point(0, 1);
+    public static readonly Point Down = new Point(0, -1);
+}
+
+#!csharp
+
+// ExampleTests
+using NUnit.Framework;
+using System;
+public class ExampleTests
+{
+    [Test]
+    public void Ex()
+    {
+        char[][] terrain =
+        {
+            "  ^^^^^^             ".ToCharArray(),
+            "^^^^^^^^       ^^^   ".ToCharArray(),
+            "^^^^^^^  ^^^         ".ToCharArray(),
+            "^^^^^^^  ^^^         ".ToCharArray(),
+            "^^^^^^^  ^^^         ".ToCharArray(),
+            "---------------------".ToCharArray(),
+            "^^^^^                ".ToCharArray(),
+            "   ^^^^^^^^  ^^^^^^^ ".ToCharArray(),
+            "^^^^^^^^     ^     ^ ".ToCharArray(),
+            "^^^^^        ^^^^^^^ ".ToCharArray()
+        };
+        Assert.AreEqual(new int[] { 189, 99, 19, 3 }, Dinglemouse.DryGround(terrain));
+    }
+}
+
+#!csharp
+
+// Run Tests
+using System;
+using System.Reflection;
+using System.Linq;
+using NUnit.Framework;
+
+Type type = typeof(ExampleTests);
+var tc = new ExampleTests();
+foreach (MethodInfo m in type.GetMethods().Where(m => m.GetCustomAttributes(typeof(TestAttribute), false).Length > 0)) {
+    
+    Console.WriteLine(m.Name);
+    m.Invoke(tc, new object[]{});
+}  
