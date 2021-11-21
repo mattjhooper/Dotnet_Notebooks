@@ -117,14 +117,14 @@ public class Terrain : IEnumerable<Marker>
 
     private int MapLevelsAndReturnPeakHeight(int level)
     {
-        bool lowerLevelFound = false;
+        bool markerSet = false;
         
         foreach(Marker m in this)
         {   
-            lowerLevelFound = m.SetLevelIfAppropriate(level) || lowerLevelFound;  
+            markerSet = m.SetLevelIfAppropriate(level) || markerSet;  
         }
      
-        return lowerLevelFound ? MapLevelsAndReturnPeakHeight(level + 1) : level - 1;
+        return markerSet ? MapLevelsAndReturnPeakHeight(level + 1) : level - 1;
     }
     
     public void Print()
