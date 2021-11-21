@@ -46,37 +46,25 @@ public class Dinglemouse
 {
     public static int PeakHeight(char[][] terrain)
     {
-        var m = new Terrain(terrain);
-        m.Print();
-
-        int peakHeight = m.GetPeakHeight();
-        m.Print();
-
-        return peakHeight;
+        var t = new Terrain(terrain);        
+        t.Print();        
+        return t.PeakHeight;
     }
     
     public static int[] DryGround(char[][] terrain)
     {
-        // Your code here
         var t = new Terrain(terrain);
-        int peakHeight = t.GetPeakHeight();
         t.Print();
+        int[] rtn = new int[4];
 
-        int floodLevel = 0;
-        int i1 = t.GetDryGround();
-        t.Flood(floodLevel++);
-        //t.Print();
-        int i2 = t.GetDryGround();
+        for (int floodLevel = 0; floodLevel < 4; floodLevel++)
+        {
+            rtn[floodLevel] = t.GetDryGround();
+            t.Flood(floodLevel);
+            t.Print();
+        }    
 
-        t.Flood(floodLevel++);
-        //t.Print();
-        int i3 = t.GetDryGround();
-
-        t.Flood(floodLevel++);
-        t.Print();
-        int i4 = t.GetDryGround();
-
-        return new int[] { i1, i2, i3, i4 };
+        return rtn;
     }
 }
 
@@ -87,6 +75,7 @@ public class Terrain : IEnumerable<Marker>
     public Terrain(char[][] t)
     {
         _t = t;
+        PeakHeight = MapLevelsAndReturnPeakHeight(1);
     }
 
     public char this[Point p]
@@ -105,17 +94,14 @@ public class Terrain : IEnumerable<Marker>
         }                
     }
 
-    public int GetPeakHeight()
-    {
-        return FindMaxLevel(1);
-    }
+    public int PeakHeight { get; private set; }
 
     public int GetDryGround()
     {
         int count = 0;
         foreach(Marker m in this)
         {   
-            count += m.IsLandable() ? 1 : 0;  
+            count += m.IsLandable ? 1 : 0;  
         }
 
         return count;
@@ -125,20 +111,20 @@ public class Terrain : IEnumerable<Marker>
     {
         foreach(Marker m in this)
         {   
-            m.FloodIfAppropriate(floodLevel);  
+            m.FloodNeighboursIfAppropriate(floodLevel);  
         }
     }
 
-    private int FindMaxLevel(int level)
+    private int MapLevelsAndReturnPeakHeight(int level)
     {
-        bool levelMarkerSet = false;
+        bool lowerLevelFound = false;
         
         foreach(Marker m in this)
         {   
-            levelMarkerSet = m.SetLevelIfAppropriate(level) || levelMarkerSet;  
+            lowerLevelFound = m.SetLevelIfAppropriate(level) || lowerLevelFound;  
         }
      
-        return levelMarkerSet ? FindMaxLevel(level + 1) : level - 1;
+        return lowerLevelFound ? MapLevelsAndReturnPeakHeight(level + 1) : level - 1;
     }
     
     public void Print()
@@ -185,59 +171,50 @@ public class Marker
     public Point Location { get; private set; }
     
     public char Icon => _t[Location];
+    public bool IsLandable => !IsRiver;
 
     public bool SetLevelIfAppropriate(int level)
     {
-        return IsSettable && CheckAdjacentSquaresForPreviousLevel(level);
-    }
-
-    public bool IsLandable()
-    {
-        return Icon != RIVER;
-    }
-
-    public void FloodIfAppropriate(int floodLevel)
-    {
-        if(IsRiver)
-        {
-            Point[] directions = {Point.Left, Point.Up, Point.Right, Point.Down};
-            for(int i = 0; i < directions.Length; i++)
-            {
-                FloodDirection(directions[i], floodLevel);      
-            }
-        }
-    }
-
-    private void FloodDirection(Point direction, int floodLevel)
-    {
-        var markerInDirection = GetMarkerInDirection(direction);
-        if (markerInDirection.IsFloodable(floodLevel))
-        {
-            markerInDirection.Flood();
-            markerInDirection.FloodIfAppropriate(floodLevel);
-        }        
-    }
-
-    private bool CheckAdjacentSquaresForPreviousLevel(int level)
-    {
-        Point[] directions = {Point.Left, Point.Up, Point.Right, Point.Down};
-        bool levelMarkerSet = false;
-        for(int i = 0; i < directions.Length && !levelMarkerSet; i++)
-        {
-            levelMarkerSet = CheckDirection(directions[i], level);      
-        }
-        return levelMarkerSet;
-    }
-
-    private bool CheckDirection(Point direction, int level)
-    {
-        if (GetMarkerInDirection(direction).IsLowerThan(level))
+        if (IsSettable && CheckNeighboursForLowerLevel(level))
         {
             SetLevel(level);
             return true;
         }
-        return false;        
+        return false;
     }
+
+    public void FloodNeighboursIfAppropriate(int floodLevel)
+    {
+        if(IsRiver)
+        {
+            Point[] directions = {Point.Left, Point.Up, Point.Right, Point.Down};
+            foreach(var direction in directions)
+            {
+                GetMarkerInDirection(direction).Flood(floodLevel);                                
+            }
+        }
+    }
+
+    private void Flood(int floodLevel)
+    {
+        if (IsFloodable(floodLevel))
+        {
+            _t[Location] = RIVER; 
+            FloodNeighboursIfAppropriate(floodLevel);
+        }        
+    }
+
+    private bool CheckNeighboursForLowerLevel(int level)
+    {
+        Point[] directions = {Point.Left, Point.Up, Point.Right, Point.Down};
+        bool lowerLevelFound = false;
+        for(int i = 0; i < directions.Length && !lowerLevelFound; i++)
+        {
+            lowerLevelFound = GetMarkerInDirection(directions[i]).IsLowerThan(level);      
+        }
+        return lowerLevelFound;
+    }
+
     private char ToIcon(int level) => level == 0 ? SPACE : (char)('0'+ level);    
 
     private Marker GetMarkerInDirection(Point direction) => new Marker(_t ,Location.Move(direction));    
@@ -259,12 +236,6 @@ public class Marker
     {
         _t[Location] = ToIcon(level);
     }
-
-    private void Flood()
-    {
-        _t[Location] = RIVER; 
-    }
-
 }
 
 public class Point
@@ -296,7 +267,23 @@ using System;
 public class ExampleTests
 {
     [Test]
-    public void Ex()
+    public void PeakHeightEx()
+    {
+        char[][] mountain =
+        {
+            "^^^^^^        ".ToCharArray(),
+            " ^^^^^^^^     ".ToCharArray(),
+            "  ^^^^^^^     ".ToCharArray(),
+            "  ^^^^^       ".ToCharArray(),
+            "  ^^^^^^^^^^^ ".ToCharArray(),
+            "  ^^^^^^      ".ToCharArray(),
+            "  ^^^^        ".ToCharArray()
+        };
+        Assert.AreEqual(3, Dinglemouse.PeakHeight(mountain));
+    }
+
+    [Test]
+    public void DryGroundEx()
     {
         char[][] terrain =
         {
